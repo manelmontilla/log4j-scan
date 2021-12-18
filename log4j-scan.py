@@ -9,6 +9,7 @@
 # ******************************************************************
 
 import argparse
+from os import replace
 import random
 import requests
 import time
@@ -22,7 +23,7 @@ from base64 import b64encode
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA256
-from termcolor import cprint
+from termcolor import cprint as termcolor_cprint
 
 
 # Disable SSL warnings
@@ -31,11 +32,6 @@ try:
     requests.packages.urllib3.disable_warnings()
 except Exception:
     pass
-
-
-cprint('[•] CVE-2021-44228 - Apache Log4j RCE Scanner', "green")
-cprint('[•] Scanner provided by FullHunt.io - The Next-Gen Attack Surface Management Platform.', "yellow")
-cprint('[•] Secure your External Attack Surface with FullHunt.io.', "yellow")
 
 if len(sys.argv) <= 1:
     print('\n%s -h for help.' % (sys.argv[0]))
@@ -113,8 +109,20 @@ parser.add_argument("--disable-http-redirects",
                     dest="disable_redirects",
                     help="Disable HTTP redirects. Note: HTTP redirects are useful as it allows the payloads to have higher chance of reaching vulnerable systems.",
                     action='store_true')
+parser.add_argument("--json",
+                    dest="json",
+                    help="Disable stdout logs and instead writes a json containing all the hosts found vulnerable.",
+                    action='store_true')
 
 args = parser.parse_args()
+
+def cprint(*params):
+    if not args.json:
+        termcolor_cprint(*params)
+
+cprint('[•] CVE-2021-44228 - Apache Log4j RCE Scanner', "green")
+cprint('[•] Scanner provided by FullHunt.io - The Next-Gen Attack Surface Management Platform.', "yellow")
+cprint('[•] Secure your External Attack Surface with FullHunt.io.', "yellow")
 
 
 proxies = {}
@@ -229,7 +237,8 @@ class Interactsh:
     def __parse_log(self, log_entry):
         new_log_entry = {"timestamp": log_entry["timestamp"],
                          "host": f'{log_entry["full-id"]}.{self.domain}',
-                         "remote_address": log_entry["remote-address"]
+                         "remote_address": log_entry["remote-address"],
+                         "original_host": log_entry["full-id"].replace("."+log_entry['unique-id'],""),
                          }
         return new_log_entry
 
@@ -353,9 +362,18 @@ def main():
         cprint("[•] Targets does not seem to be vulnerable.", "green")
     else:
         cprint("[!!!] Target Affected", "yellow")
+        report = {
+            'vulnerable':[]
+        }
+        vulnerable_hosts = set()
         for i in records:
             cprint(i, "yellow")
-
+            if args.json:
+                vulnerable_hosts
+                vulnerable_hosts.add(i['original_host'])
+        if args.json:
+            report = [host for host in list(vulnerable_hosts)]
+            print(json.dumps(report))
 
 if __name__ == "__main__":
     try:
