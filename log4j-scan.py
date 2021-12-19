@@ -372,7 +372,9 @@ def main():
                 vulnerable_hosts
                 vulnerable_hosts.add(i['original_host'])
         if args.json:
-            report = [host for host in list(vulnerable_hosts)]
+            report = []
+            if len(vulnerable_hosts) > 0:
+                report = [host for host in list(vulnerable_hosts)]
             print(json.dumps(report))
 
 if __name__ == "__main__":
@@ -382,3 +384,5 @@ if __name__ == "__main__":
         print("\nKeyboardInterrupt Detected.")
         print("Exiting...")
         exit(0)
+    except Exception:
+        exit(1)
